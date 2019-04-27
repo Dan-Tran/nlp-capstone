@@ -1,7 +1,7 @@
 {
 
-  "train_data_path": "/home/jzda/code/nlvr/nlvr/nlvr2/data/smalltrain.json",
-  "validation_data_path": "/home/jzda/code/nlvr/nlvr/nlvr2/data/smalltrain.json",
+  "train_data_path": "/projects/instr/19sp/cse481n/DJ2/nlvr/nlvr2/data/train.json",
+  "validation_data_path": "/projects/instr/19sp/cse481n/DJ2/nlvr/nlvr2/data/dev.json",
 
   "dataset_reader": {
     "type": "nlvr_reader",

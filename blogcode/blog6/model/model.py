@@ -3,6 +3,7 @@ from typing import Dict, Optional
 import numpy
 from overrides import overrides
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 from allennlp.common import Params
@@ -14,18 +15,9 @@ from allennlp.nn import InitializerApplicator, RegularizerApplicator
 from allennlp.nn import util
 from allennlp.training.metrics import CategoricalAccuracy
 
-from keras.layers import *
 from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
-from keras.applications.vgg16 import VGG16
-from keras.applications.vgg16 import preprocess_input
-from keras.layers import Dropout, Flatten, Dense
-from keras.applications import ResNet50
-from keras.models import Sequential
-from keras.layers import Dense, GlobalAveragePooling2D
-from keras import backend as K
-from keras.applications.resnet50 import preprocess_input
 
-import tensorflow as tf
+import torchvision.models as models
 
 @Model.register("nlvr_classifier")
 class SentimentClassifier(Model):
@@ -55,45 +47,44 @@ class SentimentClassifier(Model):
 
         initializer(self)
 
-        model = Sequential()
-        model.add(Conv2D(64, kernel_size=(3, 3), input_shape=(530, 700, 3), padding='VALID'))
-        model.add(Conv2D(64, kernel_size=(3, 3), padding='VALID'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-
-        model.add(Conv2D(128, kernel_size=(3, 3), strides=1, activation='relu', padding='VALID'))
-        model.add(Conv2D(128, kernel_size=(3, 3), strides=1, activation='relu', padding='VALID'))
-        model.add(AveragePooling2D(pool_size=(19, 19)))
-
-        model.add(Flatten())
-
-        model.summary()
-
-        self.image_model = model
+        self.conv1 = nn.Conv2d(3, 64, 3)
+        self.conv2 = nn.Conv2d(64, 64, 3)
+        self.conv3 = nn.Conv2d(64, 128, 3)
+        self.conv4 = nn.Conv2d(128, 128, 3)
 
 
     def process_image(self, link: str) -> None:
-        img_path = link
-        img = load_img(img_path, target_size=(530, 700))
-        img_data = img_to_array(img)
-        img_data = numpy.expand_dims(img_data, axis=0)
-        img_data = preprocess_input(img_data)
+        img = map(lambda x: load_img(x, target_size=(200, 200)), link)
+        img_data = torch.tensor(list(map(img_to_array, img))).permute(0, 3, 1, 2).cuda()
 
-        vgg_feature = self.image_model.predict(img_data)
+        x = self.conv1(img_data)
+        x = F.max_pool2d(self.conv2(x), (2, 2))
+        x = F.relu(self.conv3(x)), (2, 2)
+        x = F.avg_pool2d(F.relu(self.conv4(x)), (2, 2))
 
-        # print(vgg_feature.shape)
-        return vgg_feature
+        x = x.view(-1, self.num_flat_features(x))
+
+        #print(x.shape)
+        return x
+
+    def num_flat_features(self, x):
+        size = x.size()[1:]  # all dimensions except the batch dimension
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
 
     def get_left_link(self, metadata: Dict[str, torch.LongTensor]) -> str:
-        if 'directory' in metadata[0]: # training image
-            return "/home/jzda/nlvr2/images/train/" + str(metadata[0]['directory']) + "/" + metadata[0]['identifier'][:-2] + "-img0.png"
+        if 'directory' in metadata: # training image
+            return "/projects/instr/19sp/cse481n/DJ2/images/train/" + str(metadata['directory']) + "/" + metadata['identifier'][:-2] + "-img0.png"
         else: # dev image
-            return "/home/jzda/nlvr2/dev/" + metadata[0]['identifier'][:-2] + "-img0.png"
+            return "/projects/instr/19sp/cse481n/DJ2/images/dev/" + metadata['identifier'][:-2] + "-img0.png"
 
     def get_right_link(self, metadata: Dict[str, torch.LongTensor]) -> str:
-        if 'directory' in metadata[0]: # training image
-            return "/home/jzda/nlvr2/images/train/" + str(metadata[0]['directory']) + "/" + metadata[0]['identifier'][:-2] + "-img1.png"
+        if 'directory' in metadata: # training image
+            return "/projects/instr/19sp/cse481n/DJ2/images/train/" + str(metadata['directory']) + "/" + metadata['identifier'][:-2] + "-img1.png"
         else: # dev image
-            return "/home/jzda/nlvr2/dev/" + metadata[0]['identifier'][:-2] + "-img1.png"
+            return "/projects/instr/19sp/cse481n/DJ2/images/dev/" + metadata['identifier'][:-2] + "-img1.png"
 
     @overrides
     def forward(self,  # type: ignore
@@ -101,25 +92,28 @@ class SentimentClassifier(Model):
                 metadata: Dict[str, torch.LongTensor],
                 label: torch.LongTensor = None) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
+
         # pictures (CNN)
-        left = self.get_left_link(metadata)
-        left_image_vector = self.process_image(left)
-        right = self.get_right_link(metadata)
-        right_image_vector = self.process_image(right)
+        left = map(self.get_left_link, metadata)
+        left_image_encoding = self.process_image(left)
+        right = map(self.get_right_link, metadata)
+        right_image_encoding = self.process_image(right)
+
         # language (RNN)
         embedded_tokens = self.text_field_embedder(tokens)
         tokens_mask = util.get_text_field_mask(tokens)
         encoded_tokens = self.abstract_encoder(embedded_tokens, tokens_mask)
+
         # combination + feedforward
-        encoded_tokens_array = encoded_tokens.detach().numpy()
-        concatenated_array = numpy.concatenate((left_image_vector[0], right_image_vector[0], encoded_tokens_array[0]), axis=None)
-        concatenated_vector = torch.from_numpy(numpy.reshape(concatenated_array, (1, -1)))
-        logits = self.classifier_feedforward(concatenated_vector.cpu())
+        concatenated_encoding = torch.cat((left_image_encoding, right_image_encoding, encoded_tokens), dim=1)
+        logits = self.classifier_feedforward(concatenated_encoding)
         output_dict = {'logits': logits}
+
         # result = F.softmax(logits) # debug
         # max = torch.argmax(result, dim=1) # debug
         # print(max)
         # print(tokens)
+
         if label is not None:
             loss = self.loss(logits, label)
             for metric in self.metrics.values():
