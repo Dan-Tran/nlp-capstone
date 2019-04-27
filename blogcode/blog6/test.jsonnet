@@ -14,7 +14,7 @@
   },
 
   "model": {
-    "type": "nlvr_classifier",
+    "type": "nlvr_test_classifier",
     "text_field_embedder": {
       "token_embedders": {
          "tokens": {
@@ -29,26 +29,26 @@
       "type": "lstm",
       "bidirectional": true,
       "input_size": 100,
-      "hidden_size": 16384,
-      "num_layers": 4,
+      "hidden_size": 100,
+      "num_layers": 2,
       "dropout": 0.2
     },
     "classifier_feedforward": {
-      "input_dim": 92672,
-      "num_layers": 11,
-      "hidden_dims": [46336, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2],
-      "activations": ["sigmoid", "relu", "relu", "relu", "relu", "relu", "relu", "relu", "relu", "relu", "relu"],
-      "dropout": [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.0]
+      "input_dim": 2248,
+      "num_layers": 1,
+      "hidden_dims": [2],
+      "activations": ["linear"],
+      "dropout": [0.0]
     }
   },
 
   "iterator": {
     "type": "basic",
-    "batch_size": 1
+    "batch_size": 32
   },
 
   "trainer": {
-    "num_epochs": 15,
+    "num_epochs": 5,
     "grad_clipping": 5.0,
     "validation_metric": "+accuracy",
     "optimizer": {

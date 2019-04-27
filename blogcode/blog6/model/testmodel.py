@@ -19,7 +19,7 @@ from keras.preprocessing.image import img_to_array, load_img
 
 import torchvision.models as models
 
-@Model.register("nlvr_classifier")
+@Model.register("nlvr_test_classifier")
 class SentimentClassifier(Model):
     def __init__(self, vocab: Vocabulary,
                  text_field_embedder: TextFieldEmbedder,
@@ -47,20 +47,20 @@ class SentimentClassifier(Model):
 
         initializer(self)
 
-        self.conv1 = nn.Conv2d(3, 64, 3)
-        self.conv2 = nn.Conv2d(64, 64, 3)
-        self.conv3 = nn.Conv2d(64, 128, 3)
-        self.conv4 = nn.Conv2d(128, 128, 3)
+        self.conv1 = nn.Conv2d(3, 8, 3)
+        self.conv2 = nn.Conv2d(8, 16, 3)
+        self.conv3 = nn.Conv2d(16, 32, 3)
+        self.conv4 = nn.Conv2d(32, 64, 3)
 
 
     def process_image(self, link: str) -> None:
-        img = map(lambda x: load_img(x, target_size=(530, 700)), link)
+        img = map(lambda x: load_img(x, target_size=(200, 200)), link)
         img_data = torch.tensor(list(map(img_to_array, img))).permute(0, 3, 1, 2).cuda()
 
-        x = self.conv1(img_data)
+        x = F.max_pool2d(self.conv1(img_data), (4, 4))
         x = F.max_pool2d(self.conv2(x), (2, 2))
-        x = F.relu(self.conv3(x)), (2, 2)
-        x = F.avg_pool2d(F.relu(self.conv4(x)), (2, 2))
+        x = F.max_pool2d(F.relu(self.conv3(x)), (2, 2))
+        x = F.max_pool2d(F.relu(self.conv4(x)), (2, 2))
 
         x = x.view(-1, self.num_flat_features(x))
 
