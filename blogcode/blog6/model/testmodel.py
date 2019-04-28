@@ -2,6 +2,7 @@ from typing import Dict, Optional
 
 import numpy
 from overrides import overrides
+import warnings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -15,7 +16,7 @@ from allennlp.nn import InitializerApplicator, RegularizerApplicator
 from allennlp.nn import util
 from allennlp.training.metrics import CategoricalAccuracy
 
-from allennlp.pretrained import biaffine_parser_universal_dependencies_todzat_2017
+from allennlp.models.archival import load_archive
 
 from keras.preprocessing.image import img_to_array, load_img
 
@@ -37,8 +38,10 @@ class SentimentClassifier(Model):
         self.abstract_encoder = abstract_encoder
         self.classifier_feedforward = classifier_feedforward
 
-        #self.ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
-        #self.ud_encoder = ud_encoder
+        with warnings.catch_warnings():
+            warnings.simplefilter(action="ignore", category=DeprecationWarning)
+            self.ud_model = load_archive('https://s3-us-west-2.amazonaws.com/allennlp/models/biaffine-dependency-parser-ud-2018.08.23.tar.gz').model
+        self.ud_encoder = ud_encoder
 
         if text_field_embedder.get_output_dim() != abstract_encoder.get_input_dim():
             raise ConfigurationError("The output dimension of the text_field_embedder must match the "
@@ -111,9 +114,7 @@ class SentimentClassifier(Model):
         encoded_tokens = self.abstract_encoder(embedded_tokens, tokens_mask)
 
         # Universal Dependencies
-        #print(tokens)
-        #print(metadata)
-        #ud_out = self.ud_predictor.predict_batch_instance(tokens)
+        ud_out = self.ud_model.forward(tokens)
         print(ud_out)
 
         # combination + feedforward
