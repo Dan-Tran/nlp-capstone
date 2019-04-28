@@ -33,6 +33,14 @@
       "num_layers": 2,
       "dropout": 0.2
     },
+    "ud_encoder": {
+      "type": "lstm",
+      "bidirectional": true,
+      "input_size": 100,
+      "hidden_size": 100,
+      "num_layers": 2,
+      "dropout": 0.2
+    },
     "classifier_feedforward": {
       "input_dim": 2248,
       "num_layers": 1,

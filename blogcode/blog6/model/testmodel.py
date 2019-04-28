@@ -15,6 +15,8 @@ from allennlp.nn import InitializerApplicator, RegularizerApplicator
 from allennlp.nn import util
 from allennlp.training.metrics import CategoricalAccuracy
 
+from allennlp.pretrained import biaffine_parser_universal_dependencies_todzat_2017
+
 from keras.preprocessing.image import img_to_array, load_img
 
 import torchvision.models as models
@@ -24,6 +26,7 @@ class SentimentClassifier(Model):
     def __init__(self, vocab: Vocabulary,
                  text_field_embedder: TextFieldEmbedder,
                  abstract_encoder: Seq2VecEncoder,
+                 ud_encoder: Seq2VecEncoder,
                  classifier_feedforward: FeedForward,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None) -> None:
@@ -33,6 +36,9 @@ class SentimentClassifier(Model):
         self.num_classes = self.vocab.get_vocab_size("labels")
         self.abstract_encoder = abstract_encoder
         self.classifier_feedforward = classifier_feedforward
+
+        #self.ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
+        #self.ud_encoder = ud_encoder
 
         if text_field_embedder.get_output_dim() != abstract_encoder.get_input_dim():
             raise ConfigurationError("The output dimension of the text_field_embedder must match the "
@@ -103,6 +109,12 @@ class SentimentClassifier(Model):
         embedded_tokens = self.text_field_embedder(tokens)
         tokens_mask = util.get_text_field_mask(tokens)
         encoded_tokens = self.abstract_encoder(embedded_tokens, tokens_mask)
+
+        # Universal Dependencies
+        #print(tokens)
+        #print(metadata)
+        #ud_out = self.ud_predictor.predict_batch_instance(tokens)
+        print(ud_out)
 
         # combination + feedforward
         concatenated_encoding = torch.cat((left_image_encoding, right_image_encoding, encoded_tokens), dim=1)
