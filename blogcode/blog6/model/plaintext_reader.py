@@ -36,9 +36,9 @@ class SemanticScholarDatasetReader(DatasetReader):
                 tokens = paper_json['sentence']
                 label = paper_json['label']
                 if 'directory' in paper_json:
-                    id = { 'identifier': paper_json['identifier'], 'directory': paper_json['directory'] }
+                    id = { 'identifier': paper_json['identifier'], 'directory': paper_json['directory'], 'sentence': paper_json['sentence'] }
                 else:
-                    id = { 'identifier': paper_json['identifier'] }
+                    id = { 'identifier': paper_json['identifier'], 'sentence': paper_json['sentence'] }
                 yield self.text_to_instance(tokens, id, label)
 
     @overrides

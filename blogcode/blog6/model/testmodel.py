@@ -16,7 +16,7 @@ from allennlp.nn import InitializerApplicator, RegularizerApplicator
 from allennlp.nn import util
 from allennlp.training.metrics import CategoricalAccuracy
 
-from allennlp.models.archival import load_archive
+from allennlp.pretrained import biaffine_parser_universal_dependencies_todzat_2017
 
 from keras.preprocessing.image import img_to_array, load_img
 
@@ -38,9 +38,7 @@ class SentimentClassifier(Model):
         self.abstract_encoder = abstract_encoder
         self.classifier_feedforward = classifier_feedforward
 
-        with warnings.catch_warnings():
-            warnings.simplefilter(action="ignore", category=DeprecationWarning)
-            self.ud_model = load_archive('https://s3-us-west-2.amazonaws.com/allennlp/models/biaffine-dependency-parser-ud-2018.08.23.tar.gz').model
+        self.ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
         self.ud_encoder = ud_encoder
 
         if text_field_embedder.get_output_dim() != abstract_encoder.get_input_dim():
@@ -95,6 +93,9 @@ class SentimentClassifier(Model):
         else: # dev image
             return "/projects/instr/19sp/cse481n/DJ2/images/dev/" + metadata['identifier'][:-2] + "-img1.png"
 
+    def get_ud(self):
+        pass
+
     @overrides
     def forward(self,  # type: ignore
                 tokens: Dict[str, torch.LongTensor],
@@ -114,7 +115,7 @@ class SentimentClassifier(Model):
         encoded_tokens = self.abstract_encoder(embedded_tokens, tokens_mask)
 
         # Universal Dependencies
-        ud_out = self.ud_model.forward(tokens)
+        ud_out = map(lambda x: self.ud_predictor.forward(x['sentence']), metadata)
         print(ud_out)
 
         # combination + feedforward
