@@ -39,6 +39,7 @@ class SentimentClassifier(Model):
         self.classifier_feedforward = classifier_feedforward
 
         self.ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
+        self.ud_predictor._model = self.ud_predictor._model.cuda()
         self.ud_encoder = ud_encoder
 
         if text_field_embedder.get_output_dim() != abstract_encoder.get_input_dim():
@@ -115,7 +116,7 @@ class SentimentClassifier(Model):
         encoded_tokens = self.abstract_encoder(embedded_tokens, tokens_mask)
 
         # Universal Dependencies
-        ud_out = map(lambda x: self.ud_predictor.forward(x['sentence']), metadata)
+        ud_out = list(map(lambda x: self.ud_predictor.predict(x['sentence']), metadata))
         print(ud_out)
 
         # combination + feedforward
