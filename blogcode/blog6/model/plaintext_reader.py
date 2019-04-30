@@ -11,6 +11,8 @@ from allennlp.data.instance import Instance
 from allennlp.data.tokenizers import Tokenizer, WordTokenizer
 from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 
+from allennlp.pretrained import biaffine_parser_universal_dependencies_todzat_2017
+
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -35,19 +37,50 @@ class SemanticScholarDatasetReader(DatasetReader):
                 paper_json = json.loads(line)
                 tokens = paper_json['sentence']
                 label = paper_json['label']
+        
+                # Universal Dependency
+                # arc_loss                (F) 
+                # tag_loss                (F) 
+                # loss                    (F) 
+                # words                   (List of Words)
+                # pos                     Size of words (List of part of speech) 
+                # predicted_dependencies  Size of words (List of dependency)
+                # predicted_heads         Size of words (List of Ints) Zero indexed
+                # hierplane_tree          (Tree in nested map representation)
+                self.ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
+                self.ud_predictor._model = self.ud_predictor._model.cuda()
+                ud_out = self.ud_predictor.predict(tokens)
+
+                tags = " ".join(ud_out['pos'])
+                deps = " ".join(ud_out['predicted_dependencies'])
+
+                heads = " ".join(ud_out['predicted_heads'])
+                for head in heads:
+                  head = ud_out['words'][head]
+                heads = " ".join(heads)
+        
                 if 'directory' in paper_json:
                     id = { 'identifier': paper_json['identifier'], 'directory': paper_json['directory'], 'sentence': paper_json['sentence'] }
                 else:
                     id = { 'identifier': paper_json['identifier'], 'sentence': paper_json['sentence'] }
-                yield self.text_to_instance(tokens, id, label)
+                yield self.text_to_instance(tokens, tags, heads, deps, id, label)
 
     @overrides
-    def text_to_instance(self, tokens: str, metadata: Dict[str, str], label: str = None) -> Instance:  # type: ignore
+    def text_to_instance(self, tokens: str, tags: str, heads: str, deps: str, metadata: Dict[str, str], label: str = None) -> Instance:  # type: ignore
         # pylint: disable=arguments-differ
         tokenized_tokens = self._tokenizer.tokenize(tokens)
         tokens_field = TextField(tokenized_tokens, self._token_indexers)
 
-        fields = {'tokens': tokens_field, 'metadata': MetadataField(metadata)}
+        tokenized_tags = self._tokenizer.tokenize(tags)
+        tags_field = TextField(tokenized_tags, self._token_indexers)
+
+        tokenized_heads = self._tokenizer.tokenize(heads)
+        heads_field = TextField(tokenized_heads, self._token_indexers)
+
+        tokenized_deps = self._tokenizer.tokenize(deps)
+        deps_field = TextField(tokenized_deps, self._token_indexers)
+
+        fields = {'tokens': tokens_field, 'tags': tags_fields, 'heads': heads_fields, 'deps': deps_fields, 'metadata': MetadataField(metadata)}
         if label is not None:
             fields['label'] = LabelField(label)
         return Instance(fields)
