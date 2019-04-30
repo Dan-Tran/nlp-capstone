@@ -33,11 +33,54 @@
       "num_layers": 2,
       "dropout": 0.2
     },
-    "ud_encoder": {
+    "tag_embedder": {
+      "type": "basic",
+      "token_embedders": {
+        "tokens": {
+          "type": "embedding",
+          "embedding_dim": 10
+        }
+      }
+    },
+    "tag_encoder": {
       "type": "lstm",
       "bidirectional": true,
-      "input_size": 100,
-      "hidden_size": 100,
+      "input_size": 10,
+      "hidden_size": 20,
+      "num_layers": 2,
+      "dropout": 0.2
+    },
+    "head_embedder": {
+      "type": "basic",
+      "token_embedders": {
+        "tokens": {
+          "type": "embedding",
+          "embedding_dim": 10
+        }
+      }
+    },
+    "head_encoder": {
+      "type": "lstm",
+      "bidirectional": true,
+      "input_size": 10,
+      "hidden_size": 20,
+      "num_layers": 2,
+      "dropout": 0.2
+    },
+    "dep_embedder": {
+      "type": "basic",
+      "token_embedders": {
+        "tokens": {
+          "type": "embedding",
+          "embedding_dim": 10
+        }
+      }
+    },
+    "dep_encoder": {
+      "type": "lstm",
+      "bidirectional": true,
+      "input_size": 10,
+      "hidden_size": 20,
       "num_layers": 2,
       "dropout": 0.2
     },
