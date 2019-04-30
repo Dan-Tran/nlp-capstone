@@ -22,7 +22,7 @@ from keras.preprocessing.image import img_to_array, load_img
 
 import torchvision.models as models
 
-@Model.register("nlvr_test_classifier")
+@Model.register("nlvr_test_classifier-jack")
 class SentimentClassifier(Model):
     def __init__(self, vocab: Vocabulary,
                  text_field_embedder: TextFieldEmbedder,
