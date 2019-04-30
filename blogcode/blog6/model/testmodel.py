@@ -16,8 +16,6 @@ from allennlp.nn import InitializerApplicator, RegularizerApplicator
 from allennlp.nn import util
 from allennlp.training.metrics import CategoricalAccuracy
 
-from allennlp.pretrained import biaffine_parser_universal_dependencies_todzat_2017
-
 from keras.preprocessing.image import img_to_array, load_img
 
 import torchvision.models as models
@@ -27,7 +25,12 @@ class SentimentClassifier(Model):
     def __init__(self, vocab: Vocabulary,
                  text_field_embedder: TextFieldEmbedder,
                  abstract_encoder: Seq2VecEncoder,
-                 ud_encoder: Seq2VecEncoder,
+                 tag_embedder: TextFieldEmbedder,
+                 tag_encoder: Seq2VecEncoder,
+                 head_embedder: TextFieldEmbedder,
+                 head_encoder: Seq2VecEncoder,
+                 dep_embedder: TextFieldEmbedder,
+                 dep_encoder: Seq2VecEncoder,
                  classifier_feedforward: FeedForward,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None) -> None:
@@ -38,9 +41,12 @@ class SentimentClassifier(Model):
         self.abstract_encoder = abstract_encoder
         self.classifier_feedforward = classifier_feedforward
 
-        self.ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
-        self.ud_predictor._model = self.ud_predictor._model.cuda()
-        self.ud_encoder = ud_encoder
+        self.tag_embedder = tag_embedder
+        self.tag_encoder = tag_encoder
+        self.head_embedder = head_embedder
+        self.head_encoder = head_encoder
+        self.dep_embedder = dep_embedder
+        self.dep_encoder = dep_encoder
 
         if text_field_embedder.get_output_dim() != abstract_encoder.get_input_dim():
             raise ConfigurationError("The output dimension of the text_field_embedder must match the "
@@ -94,12 +100,12 @@ class SentimentClassifier(Model):
         else: # dev image
             return "/projects/instr/19sp/cse481n/DJ2/images/dev/" + metadata['identifier'][:-2] + "-img1.png"
 
-    def get_ud(self):
-        pass
-
     @overrides
     def forward(self,  # type: ignore
                 tokens: Dict[str, torch.LongTensor],
+                tags: Dict[str, torch.LongTensor],
+                heads: Dict[str, torch.LongTensor],
+                deps: Dict[str, torch.LongTensor],
                 metadata: Dict[str, torch.LongTensor],
                 label: torch.LongTensor = None) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
@@ -116,11 +122,20 @@ class SentimentClassifier(Model):
         encoded_tokens = self.abstract_encoder(embedded_tokens, tokens_mask)
 
         # Universal Dependencies
-        ud_out = list(map(lambda x: self.ud_predictor.predict(x['sentence']), metadata))
-        print(ud_out)
+        embedded_tags = self.tag_embedder(tags)
+        tag_mask = util.get_text_field_mask(tags)
+        encoded_tags = self.tag_encoder(embedded_tags, tag_mask)
+
+        embedded_heads = self.head_embedder(heads)
+        head_mask = util.get_text_field_mask(heads)
+        encoded_heads = self.head_encoder(embedded_heads, head_mask)
+
+        embedded_deps = self.dep_embedder(deps)
+        dep_mask = util.get_text_field_mask(deps)
+        encoded_deps = self.dep_encoder(embedded_deps, dep_mask)
 
         # combination + feedforward
-        concatenated_encoding = torch.cat((left_image_encoding, right_image_encoding, encoded_tokens), dim=1)
+        concatenated_encoding = torch.cat((left_image_encoding, right_image_encoding, encoded_tokens, encoded_tags, encoded_heads, encoded_deps), dim=1)
         logits = self.classifier_feedforward(concatenated_encoding)
         output_dict = {'logits': logits}
 
