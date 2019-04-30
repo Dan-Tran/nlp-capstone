@@ -25,6 +25,8 @@ class SemanticScholarDatasetReader(DatasetReader):
         super().__init__(lazy)
         self._tokenizer = tokenizer or WordTokenizer()
         self._token_indexers = token_indexers or {"tokens": SingleIdTokenIndexer()}
+        self._ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
+        self._ud_predictor._model = self._ud_predictor._model.cuda()
 
     @overrides
     def _read(self, file_path):
@@ -47,16 +49,14 @@ class SemanticScholarDatasetReader(DatasetReader):
                 # predicted_dependencies  Size of words (List of dependency)
                 # predicted_heads         Size of words (List of Ints) Zero indexed
                 # hierplane_tree          (Tree in nested map representation)
-                self.ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
-                self.ud_predictor._model = self.ud_predictor._model.cuda()
-                ud_out = self.ud_predictor.predict(tokens)
+                ud_out = self._ud_predictor.predict(tokens)
 
                 tags = " ".join(ud_out['pos'])
                 deps = " ".join(ud_out['predicted_dependencies'])
 
-                heads = " ".join(ud_out['predicted_heads'])
-                for head in heads:
-                  head = ud_out['words'][head]
+                heads = ud_out['predicted_heads']
+                for i in range(len(heads)):
+                  heads[i] = ud_out['words'][heads[i] - 1] if heads[i] != 0 else ud_out['words'][i]
                 heads = " ".join(heads)
         
                 if 'directory' in paper_json:
@@ -80,7 +80,7 @@ class SemanticScholarDatasetReader(DatasetReader):
         tokenized_deps = self._tokenizer.tokenize(deps)
         deps_field = TextField(tokenized_deps, self._token_indexers)
 
-        fields = {'tokens': tokens_field, 'tags': tags_fields, 'heads': heads_fields, 'deps': deps_fields, 'metadata': MetadataField(metadata)}
+        fields = {'tokens': tokens_field, 'tags': tags_field, 'heads': heads_field, 'deps': deps_field, 'metadata': MetadataField(metadata)}
         if label is not None:
             fields['label'] = LabelField(label)
         return Instance(fields)
