@@ -36,7 +36,7 @@
     "tag_embedder": {
       "type": "basic",
       "token_embedders": {
-        "tokens": {
+        "tags": {
           "type": "embedding",
           "embedding_dim": 10
         }
@@ -53,7 +53,7 @@
     "head_embedder": {
       "type": "basic",
       "token_embedders": {
-        "tokens": {
+        "heads": {
           "type": "embedding",
           "embedding_dim": 10
         }
@@ -70,7 +70,7 @@
     "dep_embedder": {
       "type": "basic",
       "token_embedders": {
-        "tokens": {
+        "deps": {
           "type": "embedding",
           "embedding_dim": 10
         }
