@@ -41,8 +41,124 @@ class SemanticScholarDatasetReader(DatasetReader):
         self._depizer = depizer or WordTokenizer()
         self._dep_indexers = dep_indexers or {"deps": SingleIdTokenIndexer()}
 
-        self._ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
-        self._ud_predictor._model = self._ud_predictor._model.cuda()
+        #self._ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
+        #self._ud_predictor._model = self._ud_predictor._model.cuda()
+
+        self.test_dict = {'arc_loss': 1.732508280838374e-05, 'tag_loss': 0.00041601393604651093, 'loss': 0.00043333900975994766, 'words': ['At', 'least', 'one', 'dog', 'is', 'showing', 'its', 'tongue', '.'
+        ], 'pos': ['ADV', 'ADV', 'NUM', 'NOUN', 'VERB', 'VERB', 'DET', 'NOUN', 'PUNCT'
+        ], 'predicted_dependencies': ['case', 'nmod', 'nummod', 'nsubj', 'root', 'ccomp', 'det', 'obj', 'punct'
+        ], 'predicted_heads': [
+            2,
+            3,
+            4,
+            5,
+            0,
+            5,
+            8,
+            6,
+            5
+        ], 'hierplane_tree': {'text': 'At least one dog is showing its tongue .', 'root': {'word': 'is', 'nodeType': 'root', 'attributes': ['VERB'
+                ], 'link': 'root', 'spans': [
+                    {'start': 17, 'end': 20
+                    }
+                ], 'children': [
+                    {'word': 'dog', 'nodeType': 'nsubj', 'attributes': ['NOUN'
+                        ], 'link': 'nsubj', 'spans': [
+                            {'start': 13, 'end': 17
+                            }
+                        ], 'children': [
+                            {'word': 'one', 'nodeType': 'nummod', 'attributes': ['NUM'
+                                ], 'link': 'nummod', 'spans': [
+                                    {'start': 9, 'end': 13
+                                    }
+                                ], 'children': [
+                                    {'word': 'least', 'nodeType': 'nmod', 'attributes': ['ADV'
+                                        ], 'link': 'nmod', 'spans': [
+                                            {'start': 3, 'end': 9
+                                            }
+                                        ], 'children': [
+                                            {'word': 'At', 'nodeType': 'case', 'attributes': ['ADV'
+                                                ], 'link': 'case', 'spans': [
+                                                    {'start': 0, 'end': 3
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {'word': 'showing', 'nodeType': 'ccomp', 'attributes': ['VERB'
+                        ], 'link': 'ccomp', 'spans': [
+                            {'start': 20, 'end': 28
+                            }
+                        ], 'children': [
+                            {'word': 'tongue', 'nodeType': 'obj', 'attributes': ['NOUN'
+                                ], 'link': 'obj', 'spans': [
+                                    {'start': 32, 'end': 39
+                                    }
+                                ], 'children': [
+                                    {'word': 'its', 'nodeType': 'det', 'attributes': ['DET'
+                                        ], 'link': 'det', 'spans': [
+                                            {'start': 28, 'end': 32
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {'word': '.', 'nodeType': 'punct', 'attributes': ['PUNCT'
+                        ], 'link': 'punct', 'spans': [
+                            {'start': 39, 'end': 41
+                            }
+                        ]
+                    }
+                ]
+            }, 'nodeTypeToStyle': {'root': ['color5', 'strong'
+                ], 'dep': ['color5', 'strong'
+                ], 'nsubj': ['color1'
+                ], 'nsubjpass': ['color1'
+                ], 'csubj': ['color1'
+                ], 'csubjpass': ['color1'
+                ], 'pobj': ['color2'
+                ], 'dobj': ['color2'
+                ], 'iobj': ['color2'
+                ], 'mark': ['color2'
+                ], 'pcomp': ['color2'
+                ], 'xcomp': ['color2'
+                ], 'ccomp': ['color2'
+                ], 'acomp': ['color2'
+                ], 'aux': ['color3'
+                ], 'cop': ['color3'
+                ], 'det': ['color3'
+                ], 'conj': ['color3'
+                ], 'cc': ['color3'
+                ], 'prep': ['color3'
+                ], 'number': ['color3'
+                ], 'possesive': ['color3'
+                ], 'poss': ['color3'
+                ], 'discourse': ['color3'
+                ], 'expletive': ['color3'
+                ], 'prt': ['color3'
+                ], 'advcl': ['color3'
+                ], 'mod': ['color4'
+                ], 'amod': ['color4'
+                ], 'tmod': ['color4'
+                ], 'quantmod': ['color4'
+                ], 'npadvmod': ['color4'
+                ], 'infmod': ['color4'
+                ], 'advmod': ['color4'
+                ], 'appos': ['color4'
+                ], 'nn': ['color4'
+                ], 'neg': ['color0'
+                ], 'punct': ['color0'
+                ]
+            }, 'linkToPosition': {'nsubj': 'left', 'nsubjpass': 'left', 'csubj': 'left', 'csubjpass': 'left', 'pobj': 'right', 'dobj': 'right', 'iobj': 'right', 'pcomp': 'right', 'xcomp': 'right', 'ccomp': 'right', 'acomp': 'right'
+            }
+        }
+    }
 
     @overrides
     def _read(self, file_path):
@@ -65,7 +181,7 @@ class SemanticScholarDatasetReader(DatasetReader):
                 # predicted_dependencies  Size of words (List of dependency)
                 # predicted_heads         Size of words (List of Ints) Zero indexed
                 # hierplane_tree          (Tree in nested map representation)
-                ud_out = self._ud_predictor.predict(tokens)
+                ud_out = self.test_dict #self._ud_predictor.predict(tokens)
 
                 tags = " ".join(ud_out['pos'])
                 deps = " ".join(ud_out['predicted_dependencies'])
