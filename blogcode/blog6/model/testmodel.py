@@ -40,14 +40,14 @@ class SentimentClassifier(Model):
         self.num_classes = self.vocab.get_vocab_size("labels")
         self.abstract_encoder = abstract_encoder
         self.classifier_feedforward = classifier_feedforward
-
+       
         self.tag_embedder = tag_embedder
         self.tag_encoder = tag_encoder
         self.head_embedder = head_embedder
         self.head_encoder = head_encoder
         self.dep_embedder = dep_embedder
         self.dep_encoder = dep_encoder
-
+        
         if text_field_embedder.get_output_dim() != abstract_encoder.get_input_dim():
             raise ConfigurationError("The output dimension of the text_field_embedder must match the "
                                      "input dimension of the abstract_encoder. Found {} and {}, "
@@ -120,7 +120,6 @@ class SentimentClassifier(Model):
         embedded_tokens = self.text_field_embedder(tokens)
         tokens_mask = util.get_text_field_mask(tokens)
         encoded_tokens = self.abstract_encoder(embedded_tokens, tokens_mask)
-
         # Universal Dependencies
         embedded_tags = self.tag_embedder(tags)
         tag_mask = util.get_text_field_mask(tags)
@@ -133,9 +132,9 @@ class SentimentClassifier(Model):
         embedded_deps = self.dep_embedder(deps)
         dep_mask = util.get_text_field_mask(deps)
         encoded_deps = self.dep_encoder(embedded_deps, dep_mask)
-
         # combination + feedforward
         concatenated_encoding = torch.cat((left_image_encoding, right_image_encoding, encoded_tokens, encoded_tags, encoded_heads, encoded_deps), dim=1)
+        # concatenated_encoding = torch.cat((left_image_encoding, right_image_encoding, encoded_tokens), dim=1)
         logits = self.classifier_feedforward(concatenated_encoding)
         output_dict = {'logits': logits}
 

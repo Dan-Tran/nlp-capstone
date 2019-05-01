@@ -41,13 +41,14 @@ class SemanticScholarDatasetReader(DatasetReader):
         self._depizer = depizer or WordTokenizer()
         self._dep_indexers = dep_indexers or {"deps": SingleIdTokenIndexer()}
 
-        #self._ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
-        #self._ud_predictor._model = self._ud_predictor._model.cuda()
-
+        self._ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
+        self._ud_predictor._model = self._ud_predictor._model.cuda()
+        """
         self.test_dict = {'words': ['At', 'least', 'one', 'dog', 'is', 'showing', 'its', 'tongue', '.'],
                           'pos': ['ADV', 'ADV', 'NUM', 'NOUN', 'VERB', 'VERB', 'DET', 'NOUN', 'PUNCT'],
                           'predicted_dependencies': ['case', 'nmod', 'nummod', 'nsubj', 'root', 'ccomp', 'det', 'obj', 'punct'],
                           'predicted_heads': [2, 3, 4, 5, 0, 5, 8, 6, 5]}
+        """
 
     @overrides
     def _read(self, file_path):
@@ -70,14 +71,20 @@ class SemanticScholarDatasetReader(DatasetReader):
                 # predicted_dependencies  Size of words (List of dependency)
                 # predicted_heads         Size of words (List of Ints) Zero indexed
                 # hierplane_tree          (Tree in nested map representation)
-                ud_out = self.test_dict #self._ud_predictor.predict(tokens)
+                
+                # ud_out = self.test_dict #self._ud_predictor.predict(tokens)
+                ud_out = self._ud_predictor.predict(tokens)
 
                 tags = " ".join(ud_out['pos'])
                 deps = " ".join(ud_out['predicted_dependencies'])
 
-                heads = ud_out['predicted_heads']
+                heads = ud_out['predicted_heads']#.copy()
                 for i in range(len(heads)):
-                  heads[i] = ud_out['words'][heads[i] - 1] if heads[i] != 0 else ud_out['words'][i]
+                  if int(heads[i]) != 0: 
+                    heads[i] = ud_out['words'][int(heads[i]) - 1] 
+                  else:
+                    heads[i] = ud_out['words'][i]
+                
                 heads = " ".join(heads)
         
                 if 'directory' in paper_json:
@@ -91,7 +98,6 @@ class SemanticScholarDatasetReader(DatasetReader):
         # pylint: disable=arguments-differ
         tokenized_tokens = self._tokenizer.tokenize(tokens)
         tokens_field = TextField(tokenized_tokens, self._token_indexers)
-
         tokenized_tags = self._tagizer.tokenize(tags)
         tags_field = TextField(tokenized_tags, self._tag_indexers)
 
@@ -102,6 +108,7 @@ class SemanticScholarDatasetReader(DatasetReader):
         deps_field = TextField(tokenized_deps, self._dep_indexers)
 
         fields = {'tokens': tokens_field, 'tags': tags_field, 'heads': heads_field, 'deps': deps_field, 'metadata': MetadataField(metadata)}
+        # fields = {'tokens': tokens_field, 'metadata': MetadataField(metadata)}
         if label is not None:
             fields['label'] = LabelField(label)
         return Instance(fields)
