@@ -21,10 +21,26 @@ class SemanticScholarDatasetReader(DatasetReader):
     def __init__(self,
                  lazy: bool = False,
                  tokenizer: Tokenizer = None,
-                 token_indexers: Dict[str, TokenIndexer] = None) -> None:
+                 token_indexers: Dict[str, TokenIndexer] = None,
+                 tagizer: Tokenizer = None,
+                 tag_indexers: Dict[str, TokenIndexer] = None,
+                 headizer: Tokenizer = None,
+                 head_indexers: Dict[str, TokenIndexer] = None,
+                 depizer: Tokenizer = None,
+                 dep_indexers: Dict[str, TokenIndexer] = None) -> None:
         super().__init__(lazy)
         self._tokenizer = tokenizer or WordTokenizer()
         self._token_indexers = token_indexers or {"tokens": SingleIdTokenIndexer()}
+
+        self._tagizer = tagizer or WordTokenizer()
+        self._tag_indexers = tag_indexers or {"tags": SingleIdTokenIndexer()}
+
+        self._headizer = headizer or WordTokenizer()
+        self._head_indexers = head_indexers or {"heads": SingleIdTokenIndexer()}
+
+        self._depizer = depizer or WordTokenizer()
+        self._dep_indexers = dep_indexers or {"deps": SingleIdTokenIndexer()}
+
         self._ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
         self._ud_predictor._model = self._ud_predictor._model.cuda()
 
@@ -71,14 +87,14 @@ class SemanticScholarDatasetReader(DatasetReader):
         tokenized_tokens = self._tokenizer.tokenize(tokens)
         tokens_field = TextField(tokenized_tokens, self._token_indexers)
 
-        tokenized_tags = self._tokenizer.tokenize(tags)
-        tags_field = TextField(tokenized_tags, self._token_indexers)
+        tokenized_tags = self._tagizer.tokenize(tags)
+        tags_field = TextField(tokenized_tags, self._tag_indexers)
 
-        tokenized_heads = self._tokenizer.tokenize(heads)
-        heads_field = TextField(tokenized_heads, self._token_indexers)
+        tokenized_heads = self._headizer.tokenize(heads)
+        heads_field = TextField(tokenized_heads, self._head_indexers)
 
-        tokenized_deps = self._tokenizer.tokenize(deps)
-        deps_field = TextField(tokenized_deps, self._token_indexers)
+        tokenized_deps = self._depizer.tokenize(deps)
+        deps_field = TextField(tokenized_deps, self._dep_indexers)
 
         fields = {'tokens': tokens_field, 'tags': tags_field, 'heads': heads_field, 'deps': deps_field, 'metadata': MetadataField(metadata)}
         if label is not None:
