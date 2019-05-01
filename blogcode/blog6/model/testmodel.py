@@ -18,7 +18,10 @@ from allennlp.training.metrics import CategoricalAccuracy
 
 from keras.preprocessing.image import img_to_array, load_img
 
+import json
 import torchvision.models as models
+
+outfile = open("preprocess.txt", "w")
 
 @Model.register("nlvr_test_classifier")
 class SentimentClassifier(Model):
@@ -40,14 +43,14 @@ class SentimentClassifier(Model):
         self.num_classes = self.vocab.get_vocab_size("labels")
         self.abstract_encoder = abstract_encoder
         self.classifier_feedforward = classifier_feedforward
-       
+
         self.tag_embedder = tag_embedder
         self.tag_encoder = tag_encoder
         self.head_embedder = head_embedder
         self.head_encoder = head_encoder
         self.dep_embedder = dep_embedder
         self.dep_encoder = dep_encoder
-        
+
         if text_field_embedder.get_output_dim() != abstract_encoder.get_input_dim():
             raise ConfigurationError("The output dimension of the text_field_embedder must match the "
                                      "input dimension of the abstract_encoder. Found {} and {}, "
@@ -115,6 +118,9 @@ class SentimentClassifier(Model):
         left_image_encoding = self.process_image(left)
         right = map(self.get_right_link, metadata)
         right_image_encoding = self.process_image(right)
+
+        outfile.write(json.dumps({map(left: left_image_encoding}) + "\n")
+        outfile.write(json.dumps({map(right: right_image_encoding}) + "\n")
 
         # language (RNN)
         embedded_tokens = self.text_field_embedder(tokens)
