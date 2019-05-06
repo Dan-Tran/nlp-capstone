@@ -43,11 +43,6 @@ class SentimentClassifier(Model):
         self.tag_embedder = tag_embedder
         self.dep_embedder = dep_embedder
 
-        if text_field_embedder.get_output_dim() != abstract_encoder.get_input_dim():
-            raise ConfigurationError("The output dimension of the text_field_embedder must match the "
-                                     "input dimension of the abstract_encoder. Found {} and {}, "
-                                     "respectively.".format(text_field_embedder.get_output_dim(),
-                                                            abstract_encoder.get_input_dim()))
         self.metrics = {
                 "accuracy": CategoricalAccuracy(),
                 "accuracy3": CategoricalAccuracy(top_k=3)

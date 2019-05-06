@@ -25,14 +25,6 @@
          }
       }
     },
-    "abstract_encoder": {
-      "type": "lstm",
-      "bidirectional": true,
-      "input_size": 300,
-      "hidden_size": 500,
-      "num_layers": 2,
-      "dropout": 0.2
-    },
     "tag_embedder": {
       "type": "basic",
       "token_embedders": {
@@ -51,8 +43,16 @@
         }
       }
     },
+    "abstract_encoder": {
+      "type": "lstm",
+      "bidirectional": true,
+      "input_size": 300,
+      "hidden_size": 500,
+      "num_layers": 2,
+      "dropout": 0.2
+    },
     "classifier_feedforward": {
-      "input_dim": 2368,
+      "input_dim": 3048,
       "num_layers": 1,
       "hidden_dims": [2],
       "activations": ["linear"],
