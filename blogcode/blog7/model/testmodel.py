@@ -21,7 +21,7 @@ from keras.preprocessing.image import img_to_array, load_img
 import json
 import torchvision.models as models
 
-outfile = open("preprocess.txt", "w")
+# outfile = open("preprocess.txt", "w")
 
 @Model.register("nlvr_test_classifier")
 class SentimentClassifier(Model):
@@ -117,6 +117,12 @@ class SentimentClassifier(Model):
         embedded_tags = self.tag_embedder(tags)
         embedded_heads = self.text_field_embedder(heads)
         embedded_deps = self.dep_embedder(deps)
+
+        #print(embedded_tokens.shape)
+        #print(embedded_tags.shape)
+        #print(embedded_heads.shape)
+        #print(embedded_deps.shape)
+
 
         # Concatentation
         # Somehow concatenate so that each element is [token tag head dep] in the sequence

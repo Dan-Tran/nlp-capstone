@@ -73,6 +73,8 @@ class SemanticScholarDatasetReader(DatasetReader):
                 tags = " ".join(ud_out['pos'])
                 deps = " ".join(ud_out['predicted_dependencies'])
 
+                deps = deps.replace(':', '')
+
                 heads = ud_out['predicted_heads']#.copy()
                 for i in range(len(heads)):
                   if int(heads[i]) != 0: 
