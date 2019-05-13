@@ -21,7 +21,7 @@ from keras.preprocessing.image import img_to_array, load_img
 import json
 import torchvision.models as models
 
-import yolo
+from model.yolo import Yolo
 
 # outfile = open("preprocess.txt", "w")
 
@@ -58,7 +58,7 @@ class SentimentClassifier(Model):
         self.conv3 = nn.Conv2d(16, 32, 3)
         self.conv4 = nn.Conv2d(32, 64, 3)
 
-        self.yolo = yolo.Yolo()
+        self.yolo = Yolo()
 
 
     def process_image(self, link: str) -> None:
@@ -78,7 +78,7 @@ class SentimentClassifier(Model):
     # Temporary, we should pretrain this
     def detect_objects(self, link: str) -> None:
 
-        reslist = list(map(lambda x: self.yolo.detect(self.net, self.meta, x.encode()), link))
+        reslist = list(map(lambda x: self.yolo.detect(x.encode()), link))
         print(reslist)
 
         # Fail to get detection output TEMPORARY
@@ -116,11 +116,11 @@ class SentimentClassifier(Model):
         # pylint: disable=arguments-differ
 
         # pictures (CNN)
-        left = map(self.get_left_link, metadata)
+        left = list(map(self.get_left_link, metadata))
         left_image_encoding = self.process_image(left)
         left_objects = self.detect_objects(left)
 
-        right = map(self.get_right_link, metadata)
+        right = list(map(self.get_right_link, metadata))
         right_image_encoding = self.process_image(right)
         right_objects = self.detect_objects(right)
 
