@@ -13,6 +13,8 @@ from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 
 from allennlp.pretrained import biaffine_parser_universal_dependencies_todzat_2017
 
+from model.yolo import Yolo
+
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -38,6 +40,8 @@ class SemanticScholarDatasetReader(DatasetReader):
 
         self._ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
         self._ud_predictor._model = self._ud_predictor._model.cuda()
+
+        self.yolo = Yolo()
         """
         self.test_dict = {'words': ['At', 'least', 'one', 'dog', 'is', 'showing', 'its', 'tongue', '.'],
                           'pos': ['ADV', 'ADV', 'NUM', 'NOUN', 'VERB', 'VERB', 'DET', 'NOUN', 'PUNCT'],
@@ -88,10 +92,28 @@ class SemanticScholarDatasetReader(DatasetReader):
                     id = { 'identifier': paper_json['identifier'], 'directory': paper_json['directory'], 'sentence': paper_json['sentence'] }
                 else:
                     id = { 'identifier': paper_json['identifier'], 'sentence': paper_json['sentence'] }
-                yield self.text_to_instance(tokens, tags, heads, deps, id, label)
+
+                # TODO: Replace with pretrained outputs
+                lob = [(b'bottle', 0.9941088557243347, (271.6317443847656, 187.2192840576172, 63.3642463684082, 247.9810333251953)), (b'cup', 0.9783698916435242, (25.982481002807617, 227.9794158935547, 55.7009391784668, 86.13970184326172)), (b'bottle', 0.9579184055328369, (151.7715301513672, 174.62904357910156, 59.851802825927734, 222.2829132080078))]
+                rob = [(b'bottle', 0.9941088557243347, (271.6317443847656, 187.2192840576172, 63.3642463684082, 247.9810333251953)), (b'cup', 0.9783698916435242, (25.982481002807617, 227.9794158935547, 55.7009391784668, 86.13970184326172)), (b'bottle', 0.9579184055328369, (151.7715301513672, 174.62904357910156, 59.851802825927734, 222.2829132080078))]
+                # lob = self.yolo.detect(self.get_left_link(id).encode())
+                # rob = self.yolo.detect(self.get_right_link(id).encode())
+
+                lobstring = ' '.join(map(lambda x: x[0].decode('utf-8'), lob))
+                lobinfo = list(map(lambda x: [x[1], x[2][0], x[2][1], x[2][2], x[2][3]], lob))
+                id['left_object_info'] = lobinfo
+
+                print(lobstring)
+                print(lobinfo)
+
+                robstring = ' '.join(map(lambda x: x[0].decode('utf-8'), rob))
+                robinfo = list(map(lambda x: [x[1], x[2][0], x[2][1], x[2][2], x[2][3]], lob))
+                id['right_object_info'] = robinfo
+
+                yield self.text_to_instance(tokens, tags, heads, deps, lobstring, robstring, id, label)
 
     @overrides
-    def text_to_instance(self, tokens: str, tags: str, heads: str, deps: str, metadata: Dict[str, str], label: str = None) -> Instance:  # type: ignore
+    def text_to_instance(self, tokens: str, tags: str, heads: str, deps: str, lobstring: str, robstring: str, metadata: Dict[str, str], label: str = None) -> Instance:  # type: ignore
         # pylint: disable=arguments-differ
         tokenized_tokens = self._tokenizer.tokenize(tokens)
         tokens_field = TextField(tokenized_tokens, self._token_indexers)
@@ -99,14 +121,32 @@ class SemanticScholarDatasetReader(DatasetReader):
         tokenized_tags = self._tagizer.tokenize(tags)
         tags_field = TextField(tokenized_tags, self._tag_indexers)
 
-        tokenized_heads = self._tokenizer.tokenize(tokens)
+        tokenized_heads = self._tokenizer.tokenize(heads)
         heads_field = TextField(tokenized_heads, self._token_indexers)
 
         tokenized_deps = self._depizer.tokenize(deps)
         deps_field = TextField(tokenized_deps, self._dep_indexers)
 
-        fields = {'tokens': tokens_field, 'tags': tags_field, 'heads': heads_field, 'deps': deps_field, 'metadata': MetadataField(metadata)}
+        tokenized_lob = self.tokenizer.tokenize(lobstring)
+        lob_field = TextField(tokenized_lob, self._token_indexers)
+
+        tokenized_rob = self.tokenizer.tokenize(robstring)
+        rob_field = TextField(tokenized_rob, self._token_indexers)
+
+        fields = {'tokens': tokens_field, 'tags': tags_field, 'heads': heads_field, 'deps': deps_field, 'lob': lob_field, 'rob': rob_field, 'metadata': MetadataField(metadata)}
         # fields = {'tokens': tokens_field, 'metadata': MetadataField(metadata)}
         if label is not None:
             fields['label'] = LabelField(label)
         return Instance(fields)
+
+    def get_left_link(self, metadata: Dict[str, torch.LongTensor]) -> str:
+        if 'directory' in metadata: # training image
+            return "/projects/instr/19sp/cse481n/DJ2/images/train/" + str(metadata['directory']) + "/" + metadata['identifier'][:-2] + "-img0.png"
+        else: # dev image
+            return "/projects/instr/19sp/cse481n/DJ2/images/dev/" + metadata['identifier'][:-2] + "-img0.png"
+
+    def get_right_link(self, metadata: Dict[str, torch.LongTensor]) -> str:
+        if 'directory' in metadata: # training image
+            return "/projects/instr/19sp/cse481n/DJ2/images/train/" + str(metadata['directory']) + "/" + metadata['identifier'][:-2] + "-img1.png"
+        else: # dev image
+            return "/projects/instr/19sp/cse481n/DJ2/images/dev/" + metadata['identifier'][:-2] + "-img1.png"

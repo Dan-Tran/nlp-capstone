@@ -58,7 +58,7 @@ class SentimentClassifier(Model):
         self.conv3 = nn.Conv2d(16, 32, 3)
         self.conv4 = nn.Conv2d(32, 64, 3)
 
-        self.yolo = Yolo()
+        #self.yolo = Yolo()
 
 
     def process_image(self, link: str) -> None:
@@ -76,15 +76,15 @@ class SentimentClassifier(Model):
         return x
 
     # Temporary, we should pretrain this
-    def detect_objects(self, link: str) -> None:
+    #def detect_objects(self, link: str) -> None:
 
-        reslist = list(map(lambda x: self.yolo.detect(x.encode()), link))
-        print(reslist)
+    #    reslist = list(map(lambda x: self.yolo.detect(x.encode()), link))
+    #    print(reslist)
 
-        # Fail to get detection output TEMPORARY
-        raise RuntimeError
+    #    # Fail to get detection output TEMPORARY
+    #    raise RuntimeError
 
-        return reslist
+    #    return reslist
 
     def num_flat_features(self, x):
         size = x.size()[1:]  # all dimensions except the batch dimension
@@ -118,11 +118,11 @@ class SentimentClassifier(Model):
         # pictures (CNN)
         left = list(map(self.get_left_link, metadata))
         left_image_encoding = self.process_image(left)
-        left_objects = self.detect_objects(left)
+        #left_objects = self.detect_objects(left)
 
         right = list(map(self.get_right_link, metadata))
         right_image_encoding = self.process_image(right)
-        right_objects = self.detect_objects(right)
+        #right_objects = self.detect_objects(right)
 
         #outfile.write(json.dumps({map(left: left_image_encoding}) + "\n")
         #outfile.write(json.dumps({map(right: right_image_encoding}) + "\n")
