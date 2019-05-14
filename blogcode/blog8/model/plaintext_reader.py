@@ -2,6 +2,10 @@ from typing import Dict
 import json
 import logging
 
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 from overrides import overrides
 
 from allennlp.common.file_utils import cached_path
@@ -100,20 +104,20 @@ class SemanticScholarDatasetReader(DatasetReader):
                 # rob = self.yolo.detect(self.get_right_link(id).encode())
 
                 lobstring = ' '.join(map(lambda x: x[0].decode('utf-8'), lob))
-                lobinfo = list(map(lambda x: [x[1], x[2][0], x[2][1], x[2][2], x[2][3]], lob))
+                lobinfo = torch.tensor(list(map(lambda x: [x[1], x[2][0], x[2][1], x[2][2], x[2][3]], lob))).cuda()
                 id['left_object_info'] = lobinfo
 
-                print(lobstring)
-                print(lobinfo)
+                #print(lobstring)
+                #print(lobinfo)
 
                 robstring = ' '.join(map(lambda x: x[0].decode('utf-8'), rob))
-                robinfo = list(map(lambda x: [x[1], x[2][0], x[2][1], x[2][2], x[2][3]], lob))
+                robinfo = torch.tensor(list(map(lambda x: [x[1], x[2][0], x[2][1], x[2][2], x[2][3]], lob))).cuda()
                 id['right_object_info'] = robinfo
 
-                yield self.text_to_instance(tokens, tags, heads, deps, lobstring, robstring, id, label)
+                yield self.text_to_instance(tokens, tags, heads, deps, lobstring, robstring, lobinfo, robinfo, id, label)
 
     @overrides
-    def text_to_instance(self, tokens: str, tags: str, heads: str, deps: str, lobstring: str, robstring: str, metadata: Dict[str, str], label: str = None) -> Instance:  # type: ignore
+    def text_to_instance(self, tokens: str, tags: str, heads: str, deps: str, lobstring: str, robstring: str, lobinfo, robinfo, metadata: Dict[str, str], label: str = None) -> Instance:  # type: ignore
         # pylint: disable=arguments-differ
         tokenized_tokens = self._tokenizer.tokenize(tokens)
         tokens_field = TextField(tokenized_tokens, self._token_indexers)
@@ -127,13 +131,13 @@ class SemanticScholarDatasetReader(DatasetReader):
         tokenized_deps = self._depizer.tokenize(deps)
         deps_field = TextField(tokenized_deps, self._dep_indexers)
 
-        tokenized_lob = self.tokenizer.tokenize(lobstring)
+        tokenized_lob = self._tokenizer.tokenize(lobstring)
         lob_field = TextField(tokenized_lob, self._token_indexers)
 
-        tokenized_rob = self.tokenizer.tokenize(robstring)
+        tokenized_rob = self._tokenizer.tokenize(robstring)
         rob_field = TextField(tokenized_rob, self._token_indexers)
 
-        fields = {'tokens': tokens_field, 'tags': tags_field, 'heads': heads_field, 'deps': deps_field, 'lob': lob_field, 'rob': rob_field, 'metadata': MetadataField(metadata)}
+        fields = {'tokens': tokens_field, 'tags': tags_field, 'heads': heads_field, 'deps': deps_field, 'lob': lob_field, 'rob': rob_field, 'lobinfo': lobinfo, 'robinfo': robinfo, 'metadata': MetadataField(metadata)}
         # fields = {'tokens': tokens_field, 'metadata': MetadataField(metadata)}
         if label is not None:
             fields['label'] = LabelField(label)

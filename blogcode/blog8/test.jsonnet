@@ -51,8 +51,16 @@
       "num_layers": 2,
       "dropout": 0.2
     },
+    "ob_encoder": {
+      "type": "lstm",
+      "bidirectional": true,
+      "input_size": 105,
+      "hidden_size": 100,
+      "num_layers": 2,
+      "dropout": 0.2
+    },
     "classifier_feedforward": {
-      "input_dim": 3048,
+      "input_dim": 3248,
       "num_layers": 1,
       "hidden_dims": [2],
       "activations": ["linear"],

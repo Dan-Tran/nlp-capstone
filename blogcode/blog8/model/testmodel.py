@@ -30,6 +30,7 @@ class SentimentClassifier(Model):
     def __init__(self, vocab: Vocabulary,
                  text_field_embedder: TextFieldEmbedder,
                  abstract_encoder: Seq2VecEncoder,
+                 ob_encoder: Seq2VecEncoder,
                  tag_embedder: TextFieldEmbedder,
                  dep_embedder: TextFieldEmbedder,
                  classifier_feedforward: FeedForward,
@@ -58,7 +59,7 @@ class SentimentClassifier(Model):
         self.conv3 = nn.Conv2d(16, 32, 3)
         self.conv4 = nn.Conv2d(32, 64, 3)
 
-        #self.yolo = Yolo()
+        self.ob_encoder = ob_encoder
 
 
     def process_image(self, link: str) -> None:
@@ -111,6 +112,10 @@ class SentimentClassifier(Model):
                 tags: Dict[str, torch.LongTensor],
                 heads: Dict[str, torch.LongTensor],
                 deps: Dict[str, torch.LongTensor],
+                lob: Dict[str, torch.LongTensor],
+                rob: Dict[str, torch.LongTensor],
+                lobinfo: torch.LongTensor,
+                robinfo: torch.LongTensor,
                 metadata: Dict[str, torch.LongTensor],
                 label: torch.LongTensor = None) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
@@ -136,6 +141,19 @@ class SentimentClassifier(Model):
         embedded_heads = self.text_field_embedder(heads)
         embedded_deps = self.dep_embedder(deps)
 
+        # Objects
+        embedded_lob = self.text_field_embedder(lob)
+        lob_mask = util.get_text_field_mask(lob)
+        embedded_rob = self.text_field_embedder(rob)
+        rob_mask = util.get_text_field_mask(rob)
+
+        # Object Encoding
+        cat_lob = torch.cat((embedded_lob, lobinfo), dim=2)
+        encoded_lob = self.ob_encoder(cat_lob, lob_mask)
+
+        cat_rob = torch.cat((embedded_rob, robinfo), dim=2)
+        encoded_rob = self.ob_encoder(cat_rob, rob_mask)
+
         #print(embedded_tokens.shape)
         #print(embedded_tags.shape)
         #print(embedded_heads.shape)
@@ -150,7 +168,7 @@ class SentimentClassifier(Model):
         encoded_tokens = self.abstract_encoder(concatenated_embedding, tokens_mask)
 
         # combination + feedforward
-        concatenated_encoding = torch.cat((left_image_encoding, right_image_encoding, encoded_tokens), dim=1)
+        concatenated_encoding = torch.cat((left_image_encoding, right_image_encoding, encoded_tokens, encoded_lob, encoded_rob), dim=1)
         logits = self.classifier_feedforward(concatenated_encoding)
         output_dict = {'logits': logits}
 
