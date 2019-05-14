@@ -104,20 +104,20 @@ class SemanticScholarDatasetReader(DatasetReader):
                 # rob = self.yolo.detect(self.get_right_link(id).encode())
 
                 lobstring = ' '.join(map(lambda x: x[0].decode('utf-8'), lob))
-                lobinfo = torch.tensor(list(map(lambda x: [x[1], x[2][0], x[2][1], x[2][2], x[2][3]], lob))).cuda()
+                lobinfo = list(map(lambda x: [x[1], x[2][0], x[2][1], x[2][2], x[2][3]], lob))
                 id['left_object_info'] = lobinfo
 
                 #print(lobstring)
                 #print(lobinfo)
 
                 robstring = ' '.join(map(lambda x: x[0].decode('utf-8'), rob))
-                robinfo = torch.tensor(list(map(lambda x: [x[1], x[2][0], x[2][1], x[2][2], x[2][3]], lob))).cuda()
+                robinfo = list(map(lambda x: [x[1], x[2][0], x[2][1], x[2][2], x[2][3]], lob))
                 id['right_object_info'] = robinfo
 
-                yield self.text_to_instance(tokens, tags, heads, deps, lobstring, robstring, lobinfo, robinfo, id, label)
+                yield self.text_to_instance(tokens, tags, heads, deps, lobstring, robstring, id, label)
 
     @overrides
-    def text_to_instance(self, tokens: str, tags: str, heads: str, deps: str, lobstring: str, robstring: str, lobinfo, robinfo, metadata: Dict[str, str], label: str = None) -> Instance:  # type: ignore
+    def text_to_instance(self, tokens: str, tags: str, heads: str, deps: str, lobstring: str, robstring: str, metadata: Dict[str, str], label: str = None) -> Instance:  # type: ignore
         # pylint: disable=arguments-differ
         tokenized_tokens = self._tokenizer.tokenize(tokens)
         tokens_field = TextField(tokenized_tokens, self._token_indexers)
@@ -137,7 +137,7 @@ class SemanticScholarDatasetReader(DatasetReader):
         tokenized_rob = self._tokenizer.tokenize(robstring)
         rob_field = TextField(tokenized_rob, self._token_indexers)
 
-        fields = {'tokens': tokens_field, 'tags': tags_field, 'heads': heads_field, 'deps': deps_field, 'lob': lob_field, 'rob': rob_field, 'lobinfo': lobinfo, 'robinfo': robinfo, 'metadata': MetadataField(metadata)}
+        fields = {'tokens': tokens_field, 'tags': tags_field, 'heads': heads_field, 'deps': deps_field, 'lob': lob_field, 'rob': rob_field, 'metadata': MetadataField(metadata)}
         # fields = {'tokens': tokens_field, 'metadata': MetadataField(metadata)}
         if label is not None:
             fields['label'] = LabelField(label)

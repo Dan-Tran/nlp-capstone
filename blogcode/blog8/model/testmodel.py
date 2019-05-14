@@ -114,8 +114,6 @@ class SentimentClassifier(Model):
                 deps: Dict[str, torch.LongTensor],
                 lob: Dict[str, torch.LongTensor],
                 rob: Dict[str, torch.LongTensor],
-                lobinfo: torch.LongTensor,
-                robinfo: torch.LongTensor,
                 metadata: Dict[str, torch.LongTensor],
                 label: torch.LongTensor = None) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
@@ -144,8 +142,11 @@ class SentimentClassifier(Model):
         # Objects
         embedded_lob = self.text_field_embedder(lob)
         lob_mask = util.get_text_field_mask(lob)
+        lobinfo = torch.tensor(list(map(lambda x: x['left_object_info'], metadata))).cuda()
+
         embedded_rob = self.text_field_embedder(rob)
         rob_mask = util.get_text_field_mask(rob)
+        robinfo = torch.tensor(list(map(lambda x: x['right_object_info'], metadata))).cuda()
 
         # Object Encoding
         cat_lob = torch.cat((embedded_lob, lobinfo), dim=2)
