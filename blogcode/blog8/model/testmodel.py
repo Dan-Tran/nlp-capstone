@@ -62,29 +62,28 @@ class SentimentClassifier(Model):
         self.ob_encoder = ob_encoder
 
 
-    def process_image(self, link: Dict[str, torch.LongTensor], focus: str) -> None:
-        image_tensor = torch.zeros(batch_size, 512).cuda()
-	"""
-        img = map(lambda x: load_img(x, target_size=(200, 200)), link)
-        img_data = torch.tensor(list(map(img_to_array, img))).permute(0, 3, 1, 2).cuda()
+    def process_image(self, metadata: Dict[str, torch.LongTensor], focus: str) -> None:
+        """
+            img = map(lambda x: load_img(x, target_size=(200, 200)), link)
+            img_data = torch.tensor(list(map(img_to_array, img))).permute(0, 3, 1, 2).cuda()
 
-        x = F.max_pool2d(self.conv1(img_data), (4, 4))
-        x = F.max_pool2d(self.conv2(x), (2, 2))
-        x = F.max_pool2d(F.relu(self.conv3(x)), (2, 2))
-        x = F.max_pool2d(F.relu(self.conv4(x)), (2, 2))
+            x = F.max_pool2d(self.conv1(img_data), (4, 4))
+            x = F.max_pool2d(self.conv2(x), (2, 2))
+            x = F.max_pool2d(F.relu(self.conv3(x)), (2, 2))
+            x = F.max_pool2d(F.relu(self.conv4(x)), (2, 2))
 
-        x = x.view(-1, self.num_flat_features(x))
+            x = x.view(-1, self.num_flat_features(x))
 
-        #print(x.shape)
-	"""
+            #print(x.shape)
+        """
+        image_tensor = torch.zeros(len(metadata), 512).cuda()
         for i, item in enumerate(metadata):
-           left_vec = torch.FloatTensor(metadata[i]["image_dict"]["left_vec"]).unsqueeze(0).cuda()
-           right_vec = torch.FloatTensor(metadata[i]["image_dict"]["right_vec"]).unsqueeze(0).cuda()
-
-           if "left" in focus:
-               image_tensor.index_copy_(0, torch.tensor([i]).cuda(), left_vec)
-           else:
-               image_tensor.index_copy_(0, torch.tensor([i]).cuda(), right_vec)
+            if "left" in focus:
+                left_vec = torch.FloatTensor(metadata[i]["image_dict"]["left_vec"]).unsqueeze(0).cuda()
+                image_tensor.index_copy_(0, torch.tensor([i]).cuda(), left_vec)
+            else:
+                right_vec = torch.FloatTensor(metadata[i]["image_dict"]["right_vec"]).unsqueeze(0).cuda()
+                image_tensor.index_copy_(0, torch.tensor([i]).cuda(), right_vec)
 
         return image_tensor
 
@@ -131,16 +130,8 @@ class SentimentClassifier(Model):
         # pylint: disable=arguments-differ
 
         # pictures (CNN)
-        left = list(map(self.get_left_link, metadata))
         left_image_encoding = self.process_image(metadata, "left")
-        #left_objects = self.detect_objects(left)
-
-        right = list(map(self.get_right_link, metadata))
         right_image_encoding = self.process_image(metadata, "right")
-        #right_objects = self.detect_objects(right)
-
-        #outfile.write(json.dumps({map(left: left_image_encoding}) + "\n")
-        #outfile.write(json.dumps({map(right: right_image_encoding}) + "\n")
 
         # language (RNN)
         embedded_tokens = self.text_field_embedder(tokens)
