@@ -52,6 +52,12 @@ class SemanticScholarDatasetReader(DatasetReader):
                           'predicted_dependencies': ['case', 'nmod', 'nummod', 'nsubj', 'root', 'ccomp', 'det', 'obj', 'punct'],
                           'predicted_heads': [2, 3, 4, 5, 0, 5, 8, 6, 5]}
         """
+        for line in open('/projects/instr/19sp/cse481n/DJ2/preprocessed/features_train_cuda.txt','r'):
+            data = json.loads(line)
+            self._image_vecs[data["identifier"]] = data
+        for line in open('/projects/instr/19sp/cse481n/DJ2/preprocessed/features_dev_cuda_new.txt','r'):
+            data = json.loads(line)
+            self._image_vecs[data["identifier"]] = data
 
     @overrides
     def _read(self, file_path):
@@ -93,9 +99,9 @@ class SemanticScholarDatasetReader(DatasetReader):
                 heads = " ".join(heads)
         
                 if 'directory' in paper_json:
-                    id = { 'identifier': paper_json['identifier'], 'directory': paper_json['directory'], 'sentence': paper_json['sentence'] }
+                    id = { 'identifier': paper_json['identifier'], 'directory': paper_json['directory'], 'image_dict': self._image_vecs[paper_json['identifier']], 'sentence': paper_json['sentence'] }
                 else:
-                    id = { 'identifier': paper_json['identifier'], 'sentence': paper_json['sentence'] }
+                    id = { 'identifier': paper_json['identifier'], 'image_dict': self._image_vecs[paper_json['identifier']], 'sentence': paper_json['sentence'] }
 
                 # TODO: Replace with pretrained outputs
                 lob = [(b'bottle', 0.9941088557243347, (271.6317443847656, 187.2192840576172, 63.3642463684082, 247.9810333251953)), (b'cup', 0.9783698916435242, (25.982481002807617, 227.9794158935547, 55.7009391784668, 86.13970184326172)), (b'bottle', 0.9579184055328369, (151.7715301513672, 174.62904357910156, 59.851802825927734, 222.2829132080078))]

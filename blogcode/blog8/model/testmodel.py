@@ -62,7 +62,9 @@ class SentimentClassifier(Model):
         self.ob_encoder = ob_encoder
 
 
-    def process_image(self, link: str) -> None:
+    def process_image(self, link: Dict[str, torch.LongTensor], focus: str) -> None:
+        image_tensor = torch.zeros(batch_size, 512).cuda()
+	"""
         img = map(lambda x: load_img(x, target_size=(200, 200)), link)
         img_data = torch.tensor(list(map(img_to_array, img))).permute(0, 3, 1, 2).cuda()
 
@@ -74,7 +76,17 @@ class SentimentClassifier(Model):
         x = x.view(-1, self.num_flat_features(x))
 
         #print(x.shape)
-        return x
+	"""
+        for i, item in enumerate(metadata):
+           left_vec = torch.FloatTensor(metadata[i]["image_dict"]["left_vec"]).unsqueeze(0).cuda()
+           right_vec = torch.FloatTensor(metadata[i]["image_dict"]["right_vec"]).unsqueeze(0).cuda()
+
+           if "left" in focus:
+               image_tensor.index_copy_(0, torch.tensor([i]).cuda(), left_vec)
+           else:
+               image_tensor.index_copy_(0, torch.tensor([i]).cuda(), right_vec)
+
+        return image_tensor
 
     # Temporary, we should pretrain this
     #def detect_objects(self, link: str) -> None:
@@ -120,11 +132,11 @@ class SentimentClassifier(Model):
 
         # pictures (CNN)
         left = list(map(self.get_left_link, metadata))
-        left_image_encoding = self.process_image(left)
+        left_image_encoding = self.process_image(metadata, "left")
         #left_objects = self.detect_objects(left)
 
         right = list(map(self.get_right_link, metadata))
-        right_image_encoding = self.process_image(right)
+        right_image_encoding = self.process_image(metadata, "right")
         #right_objects = self.detect_objects(right)
 
         #outfile.write(json.dumps({map(left: left_image_encoding}) + "\n")
