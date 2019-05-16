@@ -52,6 +52,7 @@ class SemanticScholarDatasetReader(DatasetReader):
                           'predicted_dependencies': ['case', 'nmod', 'nummod', 'nsubj', 'root', 'ccomp', 'det', 'obj', 'punct'],
                           'predicted_heads': [2, 3, 4, 5, 0, 5, 8, 6, 5]}
         """
+        self._image_vecs = {}
         for line in open('/projects/instr/19sp/cse481n/DJ2/preprocessed/features_train_cuda.txt','r'):
             data = json.loads(line)
             self._image_vecs[data["identifier"]] = data

@@ -60,7 +60,7 @@
       "dropout": 0.2
     },
     "classifier_feedforward": {
-      "input_dim": 3448,
+      "input_dim": 2424,
       "num_layers": 1,
       "hidden_dims": [2],
       "activations": ["linear"],
