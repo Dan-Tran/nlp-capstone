@@ -2,8 +2,8 @@ from ctypes import *
 import math
 import random
 
-YOLO_CONFIG = '/projects/instr/19sp/cse481n/DJ2/darknet/cfg/yolov3.cfg'
-YOLO_WEIGHTS = '/projects/instr/19sp/cse481n/DJ2/darknet/yolov3.weights'
+YOLO_CONFIG = '/projects/instr/19sp/cse481n/DJ2/darknet/cfg/yolov3-tiny.cfg'
+YOLO_WEIGHTS = '/projects/instr/19sp/cse481n/DJ2/darknet/yolov3-tiny.weights'
 META_FILE = '/projects/instr/19sp/cse481n/DJ2/darknet/cfg/coco.data'
 CCDL_LOC = '/projects/instr/19sp/cse481n/DJ2/darknet/libdarknet.so'
 

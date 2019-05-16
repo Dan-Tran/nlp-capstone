@@ -105,10 +105,15 @@ class SemanticScholarDatasetReader(DatasetReader):
                     id = { 'identifier': paper_json['identifier'], 'image_dict': self._image_vecs[paper_json['identifier']], 'sentence': paper_json['sentence'] }
 
                 # TODO: Replace with pretrained outputs
-                lob = [(b'bottle', 0.9941088557243347, (271.6317443847656, 187.2192840576172, 63.3642463684082, 247.9810333251953)), (b'cup', 0.9783698916435242, (25.982481002807617, 227.9794158935547, 55.7009391784668, 86.13970184326172)), (b'bottle', 0.9579184055328369, (151.7715301513672, 174.62904357910156, 59.851802825927734, 222.2829132080078))]
-                rob = [(b'bottle', 0.9941088557243347, (271.6317443847656, 187.2192840576172, 63.3642463684082, 247.9810333251953)), (b'cup', 0.9783698916435242, (25.982481002807617, 227.9794158935547, 55.7009391784668, 86.13970184326172)), (b'bottle', 0.9579184055328369, (151.7715301513672, 174.62904357910156, 59.851802825927734, 222.2829132080078))]
-                # lob = self.yolo.detect(self.get_left_link(id).encode())
-                # rob = self.yolo.detect(self.get_right_link(id).encode())
+                # lob = [(b'bottle', 0.9941088557243347, (271.6317443847656, 187.2192840576172, 63.3642463684082, 247.9810333251953)), (b'cup', 0.9783698916435242, (25.982481002807617, 227.9794158935547, 55.7009391784668, 86.13970184326172)), (b'bottle', 0.9579184055328369, (151.7715301513672, 174.62904357910156, 59.851802825927734, 222.2829132080078))]
+                # rob = [(b'bottle', 0.9941088557243347, (271.6317443847656, 187.2192840576172, 63.3642463684082, 247.9810333251953)), (b'cup', 0.9783698916435242, (25.982481002807617, 227.9794158935547, 55.7009391784668, 86.13970184326172)), (b'bottle', 0.9579184055328369, (151.7715301513672, 174.62904357910156, 59.851802825927734, 222.2829132080078))]
+                lob = self.yolo.detect(self.get_left_link(id).encode())
+                rob = self.yolo.detect(self.get_right_link(id).encode())
+
+                if len(lob) == 0:
+                    lob = [(b'null', 0.0, (0.0, 0.0, 0.0, 0.0))]
+                if len(rob) == 0:
+                    rob = [(b'null', 0.0, (0.0, 0.0, 0.0, 0.0))]
 
                 lobstring = ' '.join(map(lambda x: x[0].decode('utf-8'), lob))
                 lobinfo = list(map(lambda x: [x[1], x[2][0], x[2][1], x[2][2], x[2][3]], lob))
@@ -118,7 +123,7 @@ class SemanticScholarDatasetReader(DatasetReader):
                 #print(lobinfo)
 
                 robstring = ' '.join(map(lambda x: x[0].decode('utf-8'), rob))
-                robinfo = list(map(lambda x: [x[1], x[2][0], x[2][1], x[2][2], x[2][3]], lob))
+                robinfo = list(map(lambda x: [x[1], x[2][0], x[2][1], x[2][2], x[2][3]], rob))
                 id['right_object_info'] = robinfo
 
                 yield self.text_to_instance(tokens, tags, heads, deps, lobstring, robstring, id, label)
