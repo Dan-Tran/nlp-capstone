@@ -2,6 +2,10 @@ from typing import Dict
 import json
 import logging
 
+import sys
+import os
+import pickle
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -45,7 +49,7 @@ class SemanticScholarDatasetReader(DatasetReader):
         self._ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
         self._ud_predictor._model = self._ud_predictor._model.cuda()
 
-        self.yolo = Yolo()
+        # self.yolo = Yolo()
         """
         self.test_dict = {'words': ['At', 'least', 'one', 'dog', 'is', 'showing', 'its', 'tongue', '.'],
                           'pos': ['ADV', 'ADV', 'NUM', 'NOUN', 'VERB', 'VERB', 'DET', 'NOUN', 'PUNCT'],
@@ -107,8 +111,14 @@ class SemanticScholarDatasetReader(DatasetReader):
                 # TODO: Replace with pretrained outputs
                 # lob = [(b'bottle', 0.9941088557243347, (271.6317443847656, 187.2192840576172, 63.3642463684082, 247.9810333251953)), (b'cup', 0.9783698916435242, (25.982481002807617, 227.9794158935547, 55.7009391784668, 86.13970184326172)), (b'bottle', 0.9579184055328369, (151.7715301513672, 174.62904357910156, 59.851802825927734, 222.2829132080078))]
                 # rob = [(b'bottle', 0.9941088557243347, (271.6317443847656, 187.2192840576172, 63.3642463684082, 247.9810333251953)), (b'cup', 0.9783698916435242, (25.982481002807617, 227.9794158935547, 55.7009391784668, 86.13970184326172)), (b'bottle', 0.9579184055328369, (151.7715301513672, 174.62904357910156, 59.851802825927734, 222.2829132080078))]
-                lob = self.yolo.detect(self.get_left_link(id).encode())
-                rob = self.yolo.detect(self.get_right_link(id).encode())
+
+                # Manual yolo detection w/o using preprocessing
+                # lob = self.yolo.detect(self.get_left_link(id).encode())
+                # rob = self.yolo.detect(self.get_right_link(id).encode())
+
+                # Use yolo preprocessing
+                lob = self.yolo_obj_detect(id, 0)
+                rob = self.yolo_obj_detect(id, 1)
 
                 if len(lob) == 0:
                     lob = [(b'null', 0.0, (0.0, 0.0, 0.0, 0.0))]
@@ -166,3 +176,17 @@ class SemanticScholarDatasetReader(DatasetReader):
             return "/projects/instr/19sp/cse481n/DJ2/images/train/" + str(metadata['directory']) + "/" + metadata['identifier'][:-2] + "-img1.png"
         else: # dev image
             return "/projects/instr/19sp/cse481n/DJ2/images/dev/" + metadata['identifier'][:-2] + "-img1.png"
+
+    # Side represents left image if 0, else right image
+    def yolo_obj_detect(self, metadata: Dict[str, torch.LongTensor], side: int) -> list:
+        preprocessing_path = "/projects/instr/19sp/cse481n/DJ2/nlp-capstone/blogcode/blog8/objdetection/" 
+        image_path = ("train/" + str(metadata['directory']) + "/" + metadata['identifier'][:-2]) if 'directory' in metadata else ("dev/" + metadata['identifier'][:-2])
+        side_indicator = "-img0.png" if side == 0 else "-img1.png"
+                         
+        full_path = preprocessing_path + image_path + side_indicator
+
+        try:
+          with open(full_path, 'rb') as f:
+            return pickle.load(f)
+        except:
+          return []
