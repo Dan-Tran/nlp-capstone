@@ -100,7 +100,7 @@ class SemanticScholarDatasetReader(DatasetReader):
 
                 deps = deps.replace(':', '')
 
-                heads = ud_out['predicted_heads']#.copy()
+                heads = ud_out['predicted_heads'].copy()
                 for i in range(len(heads)):
                   if int(heads[i]) != 0: 
                     heads[i] = ud_out['words'][int(heads[i]) - 1] 
