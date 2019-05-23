@@ -19,9 +19,9 @@ from allennlp.data.instance import Instance
 from allennlp.data.tokenizers import Tokenizer, WordTokenizer
 from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 
-from allennlp.pretrained import biaffine_parser_universal_dependencies_todzat_2017
+# from allennlp.pretrained import biaffine_parser_universal_dependencies_todzat_2017
 
-from model.yolo import Yolo
+# from model.yolo import Yolo
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -46,8 +46,8 @@ class SemanticScholarDatasetReader(DatasetReader):
         self._depizer = depizer or WordTokenizer()
         self._dep_indexers = dep_indexers or {"deps": SingleIdTokenIndexer()}
 
-        self._ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
-        self._ud_predictor._model = self._ud_predictor._model.cuda()
+        # self._ud_predictor = biaffine_parser_universal_dependencies_todzat_2017()
+        # self._ud_predictor._model = self._ud_predictor._model.cuda()
 
         # self.yolo = Yolo()
         """
@@ -87,7 +87,7 @@ class SemanticScholarDatasetReader(DatasetReader):
                 # hierplane_tree          (Tree in nested map representation)
                 
                 # ud_out = self.test_dict
-                ud_out = self._ud_predictor.predict(tokens)
+                ud_out = self.get_parse(tokens, 'directory' in paper_json)
 
                 tags = " ".join(ud_out['pos'])
                 deps = " ".join(ud_out['predicted_dependencies'])
@@ -164,6 +164,16 @@ class SemanticScholarDatasetReader(DatasetReader):
         if label is not None:
             fields['label'] = LabelField(label)
         return Instance(fields)
+
+    def get_parse(self, tokens, is_train):
+        if is_train: # train image
+            with open('/projects/instr/19sp/cse481n/DJ2/parsing/trainparse.json', 'r') as f:
+                data = json.load(f)
+                return data[tokens]
+        else: # dev image
+            with open('/projects/instr/19sp/cse481n/DJ2/parsing/devparse.json', 'r') as f:
+                data = json.load(f)
+                return data[tokens]
 
     def get_left_link(self, metadata: Dict[str, torch.LongTensor]) -> str:
         if 'directory' in metadata: # training image
