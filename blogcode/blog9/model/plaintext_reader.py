@@ -64,6 +64,12 @@ class SemanticScholarDatasetReader(DatasetReader):
             data = json.loads(line)
             self._image_vecs[data["identifier"]] = data
 
+        with open('/projects/instr/19sp/cse481n/DJ2/parsing/trainparse.json', 'r') as trainfile:
+            self.trainparse = json.load(trainfile)
+
+        with open('/projects/instr/19sp/cse481n/DJ2/parsing/devparse.json', 'r') as devfile:
+            self.devparse = json.load(devfile)
+
     @overrides
     def _read(self, file_path):
         with open(cached_path(file_path), "r") as data_file:
@@ -167,13 +173,9 @@ class SemanticScholarDatasetReader(DatasetReader):
 
     def get_parse(self, tokens, is_train):
         if is_train: # train image
-            with open('/projects/instr/19sp/cse481n/DJ2/parsing/trainparse.json', 'r') as f:
-                data = json.load(f)
-                return data[tokens]
+            return self.trainparse[tokens]
         else: # dev image
-            with open('/projects/instr/19sp/cse481n/DJ2/parsing/devparse.json', 'r') as f:
-                data = json.load(f)
-                return data[tokens]
+            return self.devparse[tokens]
 
     def get_left_link(self, metadata: Dict[str, torch.LongTensor]) -> str:
         if 'directory' in metadata: # training image
